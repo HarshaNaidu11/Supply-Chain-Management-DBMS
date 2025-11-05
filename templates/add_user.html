@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Add User - Supply Chain Management{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Add New User</h1>
+    
+    <form method="POST" action="{{ url_for('add_user') }}">
+        <div class="form-group">
+            <label for="username">Username *</label>
+            <input type="text" id="username" name="username" required pattern="[a-zA-Z0-9_]+" title="Only letters, numbers, and underscores">
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Password *</label>
+            <input type="password" id="password" name="password" required minlength="6">
+            <small style="color: #7f8c8d;">Minimum 6 characters</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="full_name">Full Name *</label>
+            <input type="text" id="full_name" name="full_name" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email">
+        </div>
+        
+        <div class="form-group">
+            <label for="role">Role *</label>
+            <select id="role" name="role" required>
+                <option value="">-- Select Role --</option>
+                <option value="ADMIN">Admin (Full Access)</option>
+                <option value="MANAGER">Manager (View, Add, Edit)</option>
+                <option value="WAREHOUSE">Warehouse (Inventory Only)</option>
+                <option value="CUSTOMER">Customer (Read-Only)</option>
+            </select>
+        </div>
+        
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <button type="submit" class="btn btn-success">Create User</button>
+            <a href="{{ url_for('users') }}" class="btn" style="background: #95a5a6;">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<div class="card" style="margin-top: 2rem; background: #f8f9fa;">
+    <h3>Role Descriptions</h3>
+    <ul style="line-height: 2; color: #495057;">
+        <li><strong>Admin:</strong> Full system access including user management and deletions</li>
+        <li><strong>Manager:</strong> Can view all data, add products/orders, update records but cannot delete</li>
+        <li><strong>Warehouse:</strong> Limited to inventory management - view and update stock levels only</li>
+        <li><strong>Customer:</strong> Read-only access to all data and reports (external users)</li>
+    </ul>
+</div>
+{% endblock %}

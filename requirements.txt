@@ -1,0 +1,6 @@
+Flask==3.0.0
+oracledb
+python-dotenv
+flask-socketio==5.3.6
+python-socketio==5.11.0
+gevent==25.5.1

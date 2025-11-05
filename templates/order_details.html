@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Order Details{% endblock %}
+
+{% block content %}
+<h1>Order Details #{{ order[0] }}</h1>
+
+{% if order %}
+<div class="card">
+    <h2>Order Information</h2>
+    <p><strong>Order Date:</strong> {{ order[1]|string if order[1] else 'N/A' }}</p>
+    <p><strong>Supplier ID:</strong> {{ order[2] }}</p>
+    <p><strong>Warehouse ID:</strong> {{ order[3] }}</p>
+    <p><strong>Status:</strong> {{ order[4] }}</p>
+    <p><strong>Total Amount:</strong> ${{ "%.2f"|format(order[5]) if order[5] else '0.00' }}</p>
+    <p><strong>Delivery Date:</strong> {{ order[6]|string if order[6] else 'Not set' }}</p>
+    
+    {% if permissions and permissions.can_edit %}
+    <h3 style="margin-top: 2rem;">Update Status</h3>
+    <form method="POST" action="{{ url_for('update_order_status', order_id=order[0]) }}">
+        <div style="display: flex; gap: 1rem; align-items: end;">
+            <div class="form-group" style="flex: 1;">
+                <label for="status">New Status</label>
+                <select id="status" name="status" required>
+                    <option value="PENDING" {% if order[4] == 'PENDING' %}selected{% endif %}>PENDING</option>
+                    <option value="CONFIRMED" {% if order[4] == 'CONFIRMED' %}selected{% endif %}>CONFIRMED</option>
+                    <option value="SHIPPED" {% if order[4] == 'SHIPPED' %}selected{% endif %}>SHIPPED</option>
+                    <option value="DELIVERED" {% if order[4] == 'DELIVERED' %}selected{% endif %}>DELIVERED</option>
+                    <option value="CANCELLED" {% if order[4] == 'CANCELLED' %}selected{% endif %}>CANCELLED</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-success">Update</button>
+        </div>
+    </form>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>Order Items</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Item ID</th>
+                <th>Product</th>
+                <th>Quantity</th>
+                <th>Unit Price</th>
+                <th>Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for detail in details %}
+            <tr>
+                <td>{{ detail[0] }}</td>
+                <td>{{ detail[1] }}</td>
+                <td>{{ detail[2] }}</td>
+                <td>${{ "%.2f"|format(detail[3]) }}</td>
+                <td>${{ "%.2f"|format(detail[4]) }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" style="text-align: center;">No items in this order</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p>Order not found.</p>
+{% endif %}
+
+<div class="actions">
+    <a href="{{ url_for('orders') }}" class="btn">Back to Orders</a>
+</div>
+{% endblock %}

@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}User Management - Supply Chain Management{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h1>User Management</h1>
+        <a href="{{ url_for('add_user') }}" class="btn btn-success">+ Add New User</a>
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Full Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Last Login</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user[0] }}</td>
+                <td><strong>{{ user[1] }}</strong></td>
+                <td>{{ user[2] }}</td>
+                <td>{{ user[3] }}</td>
+                <td>
+                    {% if user[4] == 'ADMIN' %}
+                        <span style="padding: 0.3rem 0.6rem; border-radius: 4px; background: #2c5282; color: white; font-size: 0.85rem;">{{ user[4] }}</span>
+                    {% elif user[4] == 'MANAGER' %}
+                        <span style="padding: 0.3rem 0.6rem; border-radius: 4px; background: #3498db; color: white; font-size: 0.85rem;">{{ user[4] }}</span>
+                    {% elif user[4] == 'WAREHOUSE' %}
+                        <span style="padding: 0.3rem 0.6rem; border-radius: 4px; background: #f39c12; color: white; font-size: 0.85rem;">{{ user[4] }}</span>
+                    {% else %}
+                        <span style="padding: 0.3rem 0.6rem; border-radius: 4px; background: #95a5a6; color: white; font-size: 0.85rem;">{{ user[4] }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if user[5] == 1 %}
+                        <span style="color: #27ae60; font-weight: 500;">● Active</span>
+                    {% else %}
+                        <span style="color: #e74c3c; font-weight: 500;">● Inactive</span>
+                    {% endif %}
+                </td>
+                <td>{{ user[6] }}</td>
+                <td>{{ user[7] if user[7] else 'Never' }}</td>
+                <td>
+                    <form method="POST" action="{{ url_for('toggle_user', user_id=user[0]) }}" style="display: inline;">
+                        <button type="submit" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">
+                            {% if user[5] == 1 %}Deactivate{% else %}Activate{% endif %}
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="card" style="margin-top: 2rem;">
+    <h2>Role Permissions</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+        <div style="padding: 1.5rem; background: linear-gradient(135deg, #2c5282 0%, #1e3c72 100%); border-radius: 12px; color: white;">
+            <h3 style="color: white; margin-bottom: 1rem;">ADMIN</h3>
+            <ul style="list-style: none; line-height: 2;">
+                <li>✓ Full access to all features</li>
+                <li>✓ Manage users</li>
+                <li>✓ View audit logs</li>
+                <li>✓ Delete operations</li>
+            </ul>
+        </div>
+        
+        <div style="padding: 1.5rem; background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); border-radius: 12px; color: white;">
+            <h3 style="color: white; margin-bottom: 1rem;">MANAGER</h3>
+            <ul style="list-style: none; line-height: 2;">
+                <li>✓ View all data</li>
+                <li>✓ Add products & orders</li>
+                <li>✓ Update records</li>
+                <li>✗ No delete access</li>
+            </ul>
+        </div>
+        
+        <div style="padding: 1.5rem; background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); border-radius: 12px; color: white;">
+            <h3 style="color: white; margin-bottom: 1rem;">WAREHOUSE</h3>
+            <ul style="list-style: none; line-height: 2;">
+                <li>✓ View inventory</li>
+                <li>✓ Update stock levels</li>
+                <li>✗ Limited to inventory</li>
+                <li>✗ No delete access</li>
+            </ul>
+        </div>
+        
+        <div style="padding: 1.5rem; background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%); border-radius: 12px; color: white;">
+            <h3 style="color: white; margin-bottom: 1rem;">CUSTOMER</h3>
+            <ul style="list-style: none; line-height: 2;">
+                <li>✓ View all data</li>
+                <li>✓ Access reports</li>
+                <li>✗ Read-only access</li>
+                <li>✗ No modifications</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

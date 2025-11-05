@@ -1,0 +1,1124 @@
+{% extends "base.html" %}
+
+{% block title %}Chat - Supply Chain Management{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>💬 Messages & Notifications</h1>
+            <div class="chat-header-actions">
+                <button class="btn btn-secondary" onclick="markAllAsRead()">
+                    <span class="icon">✓</span> Mark All Read
+                </button>
+                {% if session.role in ['ADMIN', 'MANAGER'] %}
+                <button class="btn btn-primary" onclick="showBroadcastModal()">
+                    <span class="icon">📢</span> Broadcast Message
+                </button>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="chat-layout">
+            <!-- Users List Sidebar -->
+            <div class="users-sidebar">
+                <div class="users-header">
+                    <h3>Contacts</h3>
+                    <span class="unread-badge" id="totalUnread">{{ unread_count }}</span>
+                </div>
+                
+                <div class="users-filter">
+                    <input type="text" id="userSearch" placeholder="🔍 Search users..." 
+                           onkeyup="filterUsers()">
+                </div>
+
+                <div class="users-list" id="usersList">
+                    {% for user in users %}
+                    <div class="user-item {% if not user.is_active %}inactive{% endif %}" 
+                         data-user-id="{{ user.user_id }}"
+                         data-username="{{ user.username }}"
+                         onclick="selectUser({{ user.user_id }}, '{{ user.full_name }}', '{{ user.role }}')">
+                        <div class="user-avatar">
+                            {{ user.full_name[0] }}
+                        </div>
+                        <div class="user-info">
+                            <div class="user-name">{{ user.full_name }}</div>
+                            <div class="user-role">{{ user.role }}</div>
+                        </div>
+                        <span class="online-indicator" id="status-{{ user.user_id }}"></span>
+                    </div>
+                    {% endfor %}
+                    
+                    {% if not users %}
+                    <div class="no-users">
+                        <p>No contacts available</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Chat Messages Area -->
+            <div class="chat-main">
+                <div class="chat-area-header" id="chatHeader">
+                    <div class="selected-user-info" id="selectedUserInfo">
+                        <h3>Select a user to start chatting</h3>
+                    </div>
+                </div>
+
+                <div class="messages-container" id="messagesContainer">
+                    <div class="welcome-message">
+                        <div class="welcome-icon">💬</div>
+                        <h3>Welcome to SCM Chat</h3>
+                        <p>Select a contact from the sidebar to view messages</p>
+                        <div class="chat-features">
+                            <div class="feature-item">
+                                <span class="icon">🔔</span>
+                                <span>Real-time Notifications</span>
+                            </div>
+                            <div class="feature-item">
+                                <span class="icon">📊</span>
+                                <span>Low Stock Alerts</span>
+                            </div>
+                            <div class="feature-item">
+                                <span class="icon">📦</span>
+                                <span>Order Updates</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="message-input-area" id="messageInputArea" style="display: none;">
+                    <div class="typing-indicator" id="typingIndicator" style="display: none;">
+                        <span class="typing-dots">...</span> is typing
+                    </div>
+                    <form id="messageForm" onsubmit="sendMessage(event)">
+                        <input type="text" 
+                               id="messageInput" 
+                               placeholder="Type your message..." 
+                               autocomplete="off"
+                               onkeypress="handleTyping()">
+                        <button type="submit" class="btn btn-primary">
+                            Send <span class="icon">📤</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Message Details/All Messages Panel -->
+            <div class="messages-panel">
+                <div class="panel-header">
+                    <h3>All Messages</h3>
+                    <div class="filter-tabs">
+                        <button class="filter-btn active" onclick="filterMessages('all')">All</button>
+                        <button class="filter-btn" onclick="filterMessages('unread')">Unread</button>
+                        <button class="filter-btn" onclick="filterMessages('alerts')">Alerts</button>
+                    </div>
+                </div>
+                
+                <div class="all-messages-list" id="allMessagesList">
+                    {% for msg in messages %}
+                    <div class="message-item {% if not msg.is_read %}unread{% endif %} priority-{{ msg.priority|lower }}" 
+                         data-type="{{ msg.message_type }}"
+                         onclick="viewMessage({{ msg.message_id }}, {{ msg.recipient_id }})">
+                        <div class="message-item-header">
+                            <span class="sender-name">
+                                {% if msg.sender_id == session.user_id %}
+                                You
+                                {% else %}
+                                {{ msg.sender_name }}
+                                {% endif %}
+                            </span>
+                            <span class="message-time">
+                                {{ msg.sent_at if msg.sent_at else '' }}
+                            </span>
+                        </div>
+                        <div class="message-preview">
+                            {% if msg.message_type != 'GENERAL' %}
+                            <span class="message-type-badge">{{ msg.message_type.replace('_', ' ') }}</span>
+                            {% endif %}
+                            <p>{{ msg.message_text[:100] }}{% if msg.message_text|length > 100 %}...{% endif %}</p>
+                        </div>
+                        {% if not msg.is_read %}
+                        <div class="unread-dot"></div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    
+                    {% if not messages %}
+                    <div class="no-messages">
+                        <p>📭 No messages yet</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Broadcast Modal -->
+{% if session.role in ['ADMIN', 'MANAGER'] %}
+<div id="broadcastModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>📢 Broadcast Message</h2>
+            <span class="close" onclick="closeBroadcastModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="broadcastForm" onsubmit="sendBroadcast(event)">
+                <div class="form-group">
+                    <label>Send To:</label>
+                    <select id="broadcastTarget" onchange="updateRecipientList()">
+                        <option value="all">All Users</option>
+                        <option value="role">Specific Role</option>
+                        <option value="custom">Select Users</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="roleSelectGroup" style="display: none;">
+                    <label>Select Role:</label>
+                    <select id="roleSelect">
+                        <option value="ADMIN">Administrators</option>
+                        <option value="MANAGER">Managers</option>
+                        <option value="WAREHOUSE">Warehouse Staff</option>
+                        <option value="CUSTOMER">Customers</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="customUsersGroup" style="display: none;">
+                    <label>Select Users:</label>
+                    <div class="users-checkbox-list" id="customUsersList">
+                        <!-- Will be populated dynamically -->
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Message Type:</label>
+                    <select id="broadcastType">
+                        <option value="GENERAL">General</option>
+                        <option value="ANNOUNCEMENT">Announcement</option>
+                        <option value="SYSTEM_ALERT">System Alert</option>
+                        <option value="ORDER_UPDATE">Order Update</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Priority:</label>
+                    <select id="broadcastPriority">
+                        <option value="NORMAL">Normal</option>
+                        <option value="HIGH">High</option>
+                        <option value="URGENT">Urgent</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Message:</label>
+                    <textarea id="broadcastMessage" 
+                              rows="5" 
+                              placeholder="Type your broadcast message..."
+                              required></textarea>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeBroadcastModal()">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Send Broadcast
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<style>
+.chat-container {
+    background: white;
+    border-radius: 12px;
+    padding: 0;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.chat-header {
+    padding: 1.5rem 2rem;
+    border-bottom: 2px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #2c5282 0%, #1e3c72 100%);
+    color: white;
+}
+
+.chat-header h1 {
+    margin: 0;
+    font-size: 1.8rem;
+}
+
+.chat-header-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.chat-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr 350px;
+    height: calc(100vh - 250px);
+    min-height: 600px;
+}
+
+/* Users Sidebar */
+.users-sidebar {
+    border-right: 2px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    background: #f8f9fa;
+}
+
+.users-header {
+    padding: 1rem;
+    border-bottom: 2px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+}
+
+.users-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.unread-badge {
+    background: #e74c3c;
+    color: white;
+    padding: 0.3rem 0.7rem;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    font-weight: bold;
+}
+
+.users-filter {
+    padding: 1rem;
+    background: white;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.users-filter input {
+    width: 100%;
+    padding: 0.7rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+}
+
+.users-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem;
+}
+
+.user-item {
+    display: flex;
+    align-items: center;
+    padding: 0.8rem;
+    margin-bottom: 0.5rem;
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    opacity: 1;
+}
+
+.user-item:hover {
+    background: #e8f4f8;
+    transform: translateX(5px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.user-item.inactive {
+    opacity: 1;
+    background: #f8f9fa;
+}
+
+.user-avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-right: 1rem;
+}
+
+.user-info {
+    flex: 1;
+}
+
+.user-name {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0.2rem;
+}
+
+.user-role {
+    font-size: 0.85rem;
+    color: #7f8c8d;
+}
+
+.online-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #95a5a6;
+}
+
+.online-indicator.online {
+    background: #2ecc71;
+}
+
+/* Chat Main Area */
+.chat-main {
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    height: 100%;
+    overflow: hidden;
+}
+
+.chat-area-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 2px solid #e0e0e0;
+    background: white;
+    flex-shrink: 0;
+}
+
+.selected-user-info h3 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.messages-container {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Critical for flex scrolling */
+    max-height: 100%;
+}
+
+.messages-container::after {
+    content: '';
+    display: table;
+    clear: both;
+}
+
+.welcome-message {
+    text-align: center;
+    padding: 3rem;
+    color: #7f8c8d;
+}
+
+.welcome-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.chat-features {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.feature-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.feature-item .icon {
+    font-size: 2rem;
+}
+
+.message-bubble {
+    max-width: 70%;
+    padding: 1rem;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    position: relative;
+    word-wrap: break-word;
+    display: inline-block;
+}
+
+.message-received {
+    background: white;
+    border: 2px solid #e0e0e0;
+    align-self: flex-start;
+}
+
+.message-sent {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    align-self: flex-end;
+}
+
+.message-sender {
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.message-text {
+    margin-bottom: 0.5rem;
+}
+
+.message-time {
+    font-size: 0.8rem;
+    opacity: 0.7;
+}
+
+.message-type-badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    margin-bottom: 0.5rem;
+    background: #3498db;
+    color: white;
+}
+
+.message-input-area {
+    padding: 1rem 1.5rem;
+    border-top: 2px solid #e0e0e0;
+    background: white;
+    flex-shrink: 0;
+}
+
+#messageForm {
+    display: flex;
+    gap: 1rem;
+}
+
+#messageInput {
+    flex: 1;
+    padding: 0.8rem 1rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 25px;
+    font-size: 1rem;
+}
+
+#messageInput:focus {
+    border-color: #667eea;
+    outline: none;
+}
+
+.typing-indicator {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    color: #7f8c8d;
+    font-style: italic;
+}
+
+/* Messages Panel */
+.messages-panel {
+    border-left: 2px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    background: #f8f9fa;
+}
+
+.panel-header {
+    padding: 1rem;
+    border-bottom: 2px solid #e0e0e0;
+    background: white;
+}
+
+.panel-header h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1.2rem;
+}
+
+.filter-tabs {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.filter-btn {
+    flex: 1;
+    padding: 0.5rem;
+    background: #e0e0e0;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 0.9rem;
+}
+
+.filter-btn.active {
+    background: #667eea;
+    color: white;
+}
+
+.all-messages-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem;
+}
+
+.message-item {
+    background: white;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    border-left: 3px solid transparent;
+    position: relative;
+}
+
+.message-item:hover {
+    transform: translateX(-5px);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.message-item.unread {
+    border-left-color: #e74c3c;
+    background: #fff5f5;
+}
+
+.message-item.priority-high {
+    border-left-color: #f39c12;
+}
+
+.message-item.priority-urgent {
+    border-left-color: #e74c3c;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.message-item-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.sender-name {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.message-time {
+    font-size: 0.85rem;
+    color: #7f8c8d;
+}
+
+.message-preview p {
+    margin: 0.5rem 0 0 0;
+    color: #555;
+    font-size: 0.9rem;
+}
+
+.unread-dot {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 8px;
+    height: 8px;
+    background: #e74c3c;
+    border-radius: 50%;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 5% auto;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+    padding: 1.5rem 2rem;
+    border-bottom: 2px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px 12px 0 0;
+}
+
+.modal-header h2 {
+    margin: 0;
+}
+
+.close {
+    font-size: 2rem;
+    font-weight: bold;
+    cursor: pointer;
+    color: white;
+}
+
+.close:hover {
+    color: #f0f0f0;
+}
+
+.modal-body {
+    padding: 2rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.8rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: inherit;
+}
+
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: #667eea;
+    outline: none;
+}
+
+.users-checkbox-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.users-checkbox-list label {
+    display: block;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    font-weight: normal;
+}
+
+.users-checkbox-list input[type="checkbox"] {
+    margin-right: 0.5rem;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 2rem;
+}
+
+.no-users,
+.no-messages {
+    text-align: center;
+    padding: 2rem;
+    color: #7f8c8d;
+}
+</style>
+
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script>
+// @ts-nocheck - Jinja2 template syntax
+/* eslint-disable */
+const socket = io();
+let currentSelectedUser = null;
+let currentConversation = [];
+let allUsers = {{ users|tojson }};
+
+// Socket.IO Connection
+socket.on('connect', function() {
+    console.log('Connected to chat server');
+});
+
+socket.on('new_message', function(data) {
+    console.log('New message received:', data);
+    
+    // Update unread count
+    updateUnreadCount();
+    
+    // If message is for current conversation, display it immediately
+    if (currentSelectedUser) {
+        // Show if message is from current user to selected user OR from selected user to current user
+        if ((data.sender_id == {{ session.user_id }} && data.recipient_ids && data.recipient_ids.includes(currentSelectedUser)) ||
+            (data.sender_id == currentSelectedUser)) {
+            displayMessage(data);
+        }
+    }
+    
+    // Refresh all messages list
+    refreshAllMessages();
+    
+    // Show notification for received messages (not sent by current user)
+    if (data.sender_id != {{ session.user_id }}) {
+        showNotification(data);
+    }
+});
+
+socket.on('user_typing', function(data) {
+    if (currentSelectedUser && data.user_id == currentSelectedUser) {
+        document.getElementById('typingIndicator').style.display = 'block';
+        setTimeout(() => {
+            document.getElementById('typingIndicator').style.display = 'none';
+        }, 3000);
+    }
+});
+
+// Select user to chat with
+function selectUser(userId, userName, userRole) {
+    currentSelectedUser = userId;
+    
+    // Update UI
+    document.getElementById('selectedUserInfo').innerHTML = `
+        <h3>${userName} <span style="font-size: 0.9rem; color: #7f8c8d;">(${userRole})</span></h3>
+    `;
+    
+    // Show message input area
+    document.getElementById('messageInputArea').style.display = 'block';
+    
+    // Load conversation
+    loadConversation(userId);
+    
+    // Hide welcome message
+    document.querySelector('.welcome-message').style.display = 'none';
+}
+
+// Load conversation with a user
+function loadConversation(userId) {
+    fetch(`/api/conversation/${userId}`)
+        .then(response => response.json())
+        .then(data => {
+            currentConversation = data.messages;
+            displayConversation();
+        })
+        .catch(error => console.error('Error loading conversation:', error));
+}
+
+// Display conversation
+function displayConversation() {
+    const container = document.getElementById('messagesContainer');
+    container.innerHTML = ''; // Clear welcome message and old messages
+    
+    if (currentConversation.length === 0) {
+        container.innerHTML = '<div class="no-messages" style="text-align: center; padding: 2rem; color: #7f8c8d;">No messages yet. Start the conversation!</div>';
+    } else {
+        currentConversation.forEach(msg => {
+            displayMessage(msg);
+        });
+    }
+    
+    // Scroll to bottom
+    container.scrollTop = container.scrollHeight;
+}
+
+// Display a single message
+function displayMessage(msg) {
+    const container = document.getElementById('messagesContainer');
+    const isSent = msg.sender_id == {{ session.user_id }};
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message-bubble ${isSent ? 'message-sent' : 'message-received'}`;
+    
+    let badgeHtml = '';
+    if (msg.message_type && msg.message_type != 'GENERAL') {
+        badgeHtml = `<div class="message-type-badge">${msg.message_type.replace('_', ' ')}</div>`;
+    }
+    
+    messageDiv.innerHTML = `
+        ${!isSent ? `<div class="message-sender">${msg.sender_name || 'Unknown'}</div>` : ''}
+        ${badgeHtml}
+        <div class="message-text">${escapeHtml(msg.message_text)}</div>
+        <div class="message-time">${formatTime(msg.sent_at)}</div>
+    `;
+    
+    container.appendChild(messageDiv);
+    container.scrollTop = container.scrollHeight;
+}
+
+// Send message
+function sendMessage(event) {
+    event.preventDefault();
+    
+    const messageInput = document.getElementById('messageInput');
+    const messageText = messageInput.value.trim();
+    
+    if (!messageText || !currentSelectedUser) return;
+    
+    socket.emit('send_message', {
+        message_text: messageText,
+        recipient_ids: [currentSelectedUser],
+        message_type: 'GENERAL',
+        priority: 'NORMAL',
+        is_broadcast: false
+    });
+    
+    messageInput.value = '';
+}
+
+// Handle typing indicator
+let typingTimeout;
+function handleTyping() {
+    if (!currentSelectedUser) return;
+    
+    clearTimeout(typingTimeout);
+    
+    socket.emit('typing', {
+        recipient_id: currentSelectedUser
+    });
+    
+    typingTimeout = setTimeout(() => {}, 3000);
+}
+
+// Show broadcast modal
+function showBroadcastModal() {
+    document.getElementById('broadcastModal').style.display = 'block';
+    updateRecipientList();
+}
+
+function closeBroadcastModal() {
+    document.getElementById('broadcastModal').style.display = 'none';
+}
+
+// Update recipient list based on selection
+function updateRecipientList() {
+    const target = document.getElementById('broadcastTarget').value;
+    
+    document.getElementById('roleSelectGroup').style.display = 
+        target === 'role' ? 'block' : 'none';
+    document.getElementById('customUsersGroup').style.display = 
+        target === 'custom' ? 'block' : 'none';
+    
+    if (target === 'custom') {
+        loadCustomUsersList();
+    }
+}
+
+function loadCustomUsersList() {
+    const container = document.getElementById('customUsersList');
+    container.innerHTML = '';
+    
+    allUsers.forEach(user => {
+        const label = document.createElement('label');
+        label.innerHTML = `
+            <input type="checkbox" value="${user.user_id}">
+            ${user.full_name} (${user.role})
+        `;
+        container.appendChild(label);
+    });
+}
+
+// Send broadcast message
+function sendBroadcast(event) {
+    event.preventDefault();
+    
+    const target = document.getElementById('broadcastTarget').value;
+    const messageType = document.getElementById('broadcastType').value;
+    const priority = document.getElementById('broadcastPriority').value;
+    const messageText = document.getElementById('broadcastMessage').value;
+    
+    let recipientIds = [];
+    let isBroadcast = false;
+    
+    if (target === 'all') {
+        isBroadcast = true;
+    } else if (target === 'role') {
+        const role = document.getElementById('roleSelect').value;
+        fetch(`/api/users/role/${role}`)
+            .then(response => response.json())
+            .then(data => {
+                recipientIds = data.users.map(u => u.user_id);
+                sendBroadcastMessage(recipientIds, messageType, priority, messageText, false);
+            });
+        return;
+    } else if (target === 'custom') {
+        const checkboxes = document.querySelectorAll('#customUsersList input:checked');
+        recipientIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+    }
+    
+    sendBroadcastMessage(recipientIds, messageType, priority, messageText, isBroadcast);
+}
+
+function sendBroadcastMessage(recipientIds, messageType, priority, messageText, isBroadcast) {
+    fetch('/api/messages/send', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            recipient_ids: recipientIds,
+            message_text: messageText,
+            message_type: messageType,
+            priority: priority,
+            is_broadcast: isBroadcast
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeBroadcastModal();
+            document.getElementById('broadcastForm').reset();
+            showAlert('Broadcast sent successfully!', 'success');
+        } else {
+            showAlert('Failed to send broadcast', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error sending broadcast:', error);
+        showAlert('Error sending broadcast', 'error');
+    });
+}
+
+// Mark all messages as read
+function markAllAsRead() {
+    fetch('/api/messages/read-all', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updateUnreadCount();
+            refreshAllMessages();
+            showAlert('All messages marked as read', 'success');
+        }
+    });
+}
+
+// Update unread count
+function updateUnreadCount() {
+    fetch('/api/messages?unread_only=true')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('totalUnread').textContent = data.unread_count;
+        });
+}
+
+// Refresh all messages list
+function refreshAllMessages() {
+    fetch('/api/messages')
+        .then(response => response.json())
+        .then(data => {
+            // Update the all messages panel
+            // Implementation depends on your needs
+        });
+}
+
+// Filter messages
+function filterMessages(type) {
+    const buttons = document.querySelectorAll('.filter-btn');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    const messages = document.querySelectorAll('.message-item');
+    messages.forEach(msg => {
+        if (type === 'all') {
+            msg.style.display = 'block';
+        } else if (type === 'unread') {
+            msg.style.display = msg.classList.contains('unread') ? 'block' : 'none';
+        } else if (type === 'alerts') {
+            const msgType = msg.dataset.type;
+            msg.style.display = msgType.includes('ALERT') ? 'block' : 'none';
+        }
+    });
+}
+
+// Filter users
+function filterUsers() {
+    const searchText = document.getElementById('userSearch').value.toLowerCase();
+    const users = document.querySelectorAll('.user-item');
+    
+    users.forEach(user => {
+        const userName = user.querySelector('.user-name').textContent.toLowerCase();
+        user.style.display = userName.includes(searchText) ? 'flex' : 'none';
+    });
+}
+
+// View specific message
+function viewMessage(messageId, recipientId) {
+    // Mark as read
+    fetch(`/api/messages/${recipientId}/read`, {
+        method: 'POST'
+    })
+    .then(() => {
+        updateUnreadCount();
+        // Refresh the message item
+        event.target.closest('.message-item').classList.remove('unread');
+    });
+}
+
+// Show notification
+function showNotification(data) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('New Message', {
+            body: `${data.sender_name}: ${data.message_text.substring(0, 100)}`,
+            icon: '/static/notification-icon.png'
+        });
+    }
+}
+
+// Helper functions
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function formatTime(timestamp) {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function showAlert(message, type) {
+    // Implement your alert/toast notification
+    alert(message);
+}
+
+// Request notification permission
+if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+}
+
+// Update unread count periodically
+setInterval(updateUnreadCount, 30000); // Every 30 seconds
+</script>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory{% endblock %}
+
+{% block content %}
+<h1>Inventory Status</h1>
+
+<div class="actions">
+    <a href="{{ url_for('low_stock') }}" class="btn btn-danger">View Low Stock Items</a>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Product</th>
+            <th>Warehouse</th>
+            <th>Quantity</th>
+            <th>Reorder Level</th>
+            <th>Last Updated</th>
+            {% if permissions and (permissions.can_edit or session.role == 'WAREHOUSE') %}
+            <th>Actions</th>
+            {% endif %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in inventory %}
+        <tr>
+            <td>{{ item[0] }}</td>
+            <td>{{ item[1] }}</td>
+            <td>{{ item[2] }}</td>
+            <td>{{ item[3] }}</td>
+            <td>{{ item[4] }}</td>
+            <td>{{ item[5]|string if item[5] else 'N/A' }}</td>
+            {% if permissions and (permissions.can_edit or session.role == 'WAREHOUSE') %}
+            <td>
+                <form method="POST" action="{{ url_for('update_inventory', inventory_id=item[0]) }}" style="display: inline-flex; gap: 0.5rem;">
+                    <input type="number" name="quantity" value="{{ item[3] }}" min="0" style="width: 80px;">
+                    <button type="submit" class="btn" style="padding: 0.4rem 0.8rem;">Update</button>
+                </form>
+            </td>
+            {% endif %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

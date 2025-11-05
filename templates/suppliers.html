@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Suppliers{% endblock %}
+
+{% block content %}
+<h1>Suppliers</h1>
+
+{% if permissions and permissions.can_add %}
+<div class="actions">
+    <a href="{{ url_for('add_supplier') }}" class="btn btn-success">Add New Supplier</a>
+</div>
+{% endif %}
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Contact</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>City</th>
+            <th>Country</th>
+            <th>Rating</th>
+            {% if permissions and (permissions.can_edit or permissions.can_delete) %}
+            <th>Actions</th>
+            {% endif %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for supplier in suppliers %}
+        <tr>
+            <td>{{ supplier[0] }}</td>
+            <td>{{ supplier[1] }}</td>
+            <td>{{ supplier[2] }}</td>
+            <td>{{ supplier[3] }}</td>
+            <td>{{ supplier[4] }}</td>
+            <td>{{ supplier[6] }}</td>
+            <td>{{ supplier[7] }}</td>
+            <td>{{ supplier[8] }}</td>
+            {% if permissions and (permissions.can_edit or permissions.can_delete) %}
+            <td>
+                {% if permissions.can_edit %}
+                <a href="{{ url_for('edit_supplier', supplier_id=supplier[0]) }}" class="btn" style="padding: 0.4rem 0.8rem;">Edit</a>
+                {% endif %}
+                {% if permissions.can_delete %}
+                <a href="{{ url_for('delete_supplier', supplier_id=supplier[0]) }}" 
+                   class="btn btn-danger" 
+                   style="padding: 0.4rem 0.8rem;"
+                   onclick="return confirm('Are you sure?')">Delete</a>
+                {% endif %}
+            </td>
+            {% endif %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

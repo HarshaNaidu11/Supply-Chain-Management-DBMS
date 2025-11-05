@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Create Order{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Create New Order</h1>
+    
+    <form method="POST">
+        <div class="form-group">
+            <label for="supplier_id">Supplier *</label>
+            <select id="supplier_id" name="supplier_id" required>
+                <option value="">Select Supplier</option>
+                {% for supplier in suppliers %}
+                <option value="{{ supplier[0] }}">{{ supplier[1] }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="warehouse_id">Warehouse *</label>
+            <select id="warehouse_id" name="warehouse_id" required>
+                <option value="">Select Warehouse</option>
+                {% for warehouse in warehouses %}
+                <option value="{{ warehouse[0] }}">{{ warehouse[1] }} - {{ warehouse[3] }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="delivery_date">Expected Delivery Date</label>
+            <input type="date" id="delivery_date" name="delivery_date">
+        </div>
+        
+        <div class="actions">
+            <button type="submit" class="btn btn-success">Create Order</button>
+            <a href="{{ url_for('orders') }}" class="btn">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

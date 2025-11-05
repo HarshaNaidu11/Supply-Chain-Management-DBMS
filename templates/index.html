@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Supply Chain Management{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Supply Chain Management System</h1>
+    <p style="margin-bottom: 2.5rem; color: #7f8c8d; font-size: 1.1rem; line-height: 1.6;">
+        Manage your supply chain operations efficiently with <strong>Oracle Database</strong>. 
+        Track suppliers, products, warehouses, inventory, and orders all in one place.
+    </p>
+    
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="icon">S</div>
+            <h3>Suppliers</h3>
+            <div class="number">Manage</div>
+            <p style="color: #7f8c8d; font-size: 0.9rem; margin: 0.5rem 0 1rem 0;">Track and manage supplier relationships</p>
+            <a href="{{ url_for('suppliers') }}" class="btn" style="width: 100%;">View All →</a>
+        </div>
+        
+        <div class="stat-card">
+            <div class="icon">P</div>
+            <h3>Products</h3>
+            <div class="number">Catalog</div>
+            <p style="color: #7f8c8d; font-size: 0.9rem; margin: 0.5rem 0 1rem 0;">Browse complete product catalog</p>
+            <a href="{{ url_for('products') }}" class="btn" style="width: 100%;">View All →</a>
+        </div>
+        
+        <div class="stat-card">
+            <div class="icon">W</div>
+            <h3>Warehouses</h3>
+            <div class="number">Locations</div>
+            <p style="color: #7f8c8d; font-size: 0.9rem; margin: 0.5rem 0 1rem 0;">Manage warehouse locations</p>
+            <a href="{{ url_for('warehouses') }}" class="btn" style="width: 100%;">View All →</a>
+        </div>
+        
+        <div class="stat-card">
+            <div class="icon">I</div>
+            <h3>Inventory</h3>
+            <div class="number">Stock</div>
+            <p style="color: #7f8c8d; font-size: 0.9rem; margin: 0.5rem 0 1rem 0;">Monitor stock levels in real-time</p>
+            <a href="{{ url_for('inventory') }}" class="btn" style="width: 100%;">View All →</a>
+        </div>
+        
+        <div class="stat-card">
+            <div class="icon">O</div>
+            <h3>Orders</h3>
+            <div class="number">Track</div>
+            <p style="color: #7f8c8d; font-size: 0.9rem; margin: 0.5rem 0 1rem 0;">Track all purchase orders</p>
+            <a href="{{ url_for('orders') }}" class="btn" style="width: 100%;">View All →</a>
+        </div>
+        
+        <div class="stat-card">
+            <div class="icon">A</div>
+            <h3>Analytics</h3>
+            <div class="number">Insights</div>
+            <p style="color: #7f8c8d; font-size: 0.9rem; margin: 0.5rem 0 1rem 0;">View reports and performance</p>
+            <a href="{{ url_for('analytics') }}" class="btn" style="width: 100%;">View Reports →</a>
+        </div>
+    </div>
+    
+    <h2>Quick Actions</h2>
+    <div class="actions">
+        <a href="{{ url_for('add_supplier') }}" class="btn btn-success">+ Add Supplier</a>
+        <a href="{{ url_for('add_product') }}" class="btn btn-success">+ Add Product</a>
+        <a href="{{ url_for('create_order') }}" class="btn btn-success">Create Order</a>
+        <a href="{{ url_for('low_stock') }}" class="btn btn-danger">Low Stock Items</a>
+    </div>
+</div>
+{% endblock %}

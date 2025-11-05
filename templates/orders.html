@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Orders{% endblock %}
+
+{% block content %}
+<h1>Orders</h1>
+
+{% if permissions and permissions.can_add %}
+<div class="actions">
+    <a href="{{ url_for('create_order') }}" class="btn btn-success">Create New Order</a>
+</div>
+{% endif %}
+
+<table>
+    <thead>
+        <tr>
+            <th>Order ID</th>
+            <th>Supplier</th>
+            <th>Warehouse</th>
+            <th>Order Date</th>
+            <th>Status</th>
+            <th>Total Amount</th>
+            <th>Items</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for order in orders %}
+        <tr>
+            <td>{{ order[0] }}</td>
+            <td>{{ order[1] }}</td>
+            <td>{{ order[2] }}</td>
+            <td>{{ order[3]|string if order[3] else 'N/A' }}</td>
+            <td>
+                {% if order[4] == 'DELIVERED' %}
+                    <span style="padding: 0.3rem 0.6rem; border-radius: 4px; background: #d4edda;">{{ order[4] }}</span>
+                {% elif order[4] == 'SHIPPED' %}
+                    <span style="padding: 0.3rem 0.6rem; border-radius: 4px; background: #cce5ff;">{{ order[4] }}</span>
+                {% elif order[4] == 'CONFIRMED' %}
+                    <span style="padding: 0.3rem 0.6rem; border-radius: 4px; background: #fff3cd;">{{ order[4] }}</span>
+                {% elif order[4] == 'CANCELLED' %}
+                    <span style="padding: 0.3rem 0.6rem; border-radius: 4px; background: #f8d7da;">{{ order[4] }}</span>
+                {% else %}
+                    <span style="padding: 0.3rem 0.6rem; border-radius: 4px; background: #e2e3e5;">{{ order[4] }}</span>
+                {% endif %}
+            </td>
+            <td>${{ "%.2f"|format(order[5]) if order[5] else '0.00' }}</td>
+            <td>{{ order[6] }}</td>
+            <td>
+                <a href="{{ url_for('order_details', order_id=order[0]) }}" class="btn" style="padding: 0.4rem 0.8rem;">View</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

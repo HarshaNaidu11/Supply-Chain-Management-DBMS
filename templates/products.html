@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Products{% endblock %}
+
+{% block content %}
+<h1>Products</h1>
+
+{% if permissions and permissions.can_add %}
+<div class="actions">
+    <a href="{{ url_for('add_product') }}" class="btn btn-success">Add New Product</a>
+</div>
+{% endif %}
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Supplier</th>
+            <th>Price</th>
+            <th>Description</th>
+            {% if permissions and permissions.can_delete %}
+            <th>Actions</th>
+            {% endif %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for product in products %}
+        <tr>
+            <td>{{ product[0] }}</td>
+            <td>{{ product[1] }}</td>
+            <td>{{ product[2] }}</td>
+            <td>{{ product[5] if product[5] else 'N/A' }}</td>
+            <td>${{ "%.2f"|format(product[3] if product[3] else 0) }}</td>
+            <td>{{ product[4] if product[4] else '' }}</td>
+            {% if permissions and permissions.can_delete %}
+            <td>
+                <a href="{{ url_for('delete_product', product_id=product[0]) }}" 
+                   class="btn btn-danger" 
+                   style="padding: 0.4rem 0.8rem;"
+                   onclick="return confirm('Are you sure?')">Delete</a>
+            </td>
+            {% endif %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

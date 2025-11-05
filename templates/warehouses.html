@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Warehouses{% endblock %}
+
+{% block content %}
+<h1>Warehouses</h1>
+
+{% if permissions and permissions.can_add %}
+<div class="actions">
+    <a href="{{ url_for('add_warehouse') }}" class="btn btn-success">Add New Warehouse</a>
+</div>
+{% endif %}
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Location</th>
+            <th>City</th>
+            <th>Capacity</th>
+            <th>Manager</th>
+            <th>Phone</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for warehouse in warehouses %}
+        <tr>
+            <td>{{ warehouse[0] }}</td>
+            <td>{{ warehouse[1] }}</td>
+            <td>{{ warehouse[2] }}</td>
+            <td>{{ warehouse[3] }}</td>
+            <td>{{ warehouse[4] }}</td>
+            <td>{{ warehouse[5] }}</td>
+            <td>{{ warehouse[6] }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

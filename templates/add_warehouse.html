@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Add Warehouse{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Add New Warehouse</h1>
+    
+    <form method="POST">
+        <div class="form-group">
+            <label for="name">Warehouse Name *</label>
+            <input type="text" id="name" name="name" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="location">Location</label>
+            <input type="text" id="location" name="location">
+        </div>
+        
+        <div class="form-group">
+            <label for="city">City</label>
+            <input type="text" id="city" name="city">
+        </div>
+        
+        <div class="form-group">
+            <label for="capacity">Capacity *</label>
+            <input type="number" id="capacity" name="capacity" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="manager">Manager</label>
+            <input type="text" id="manager" name="manager">
+        </div>
+        
+        <div class="form-group">
+            <label for="phone">Phone</label>
+            <input type="text" id="phone" name="phone">
+        </div>
+        
+        <div class="actions">
+            <button type="submit" class="btn btn-success">Add Warehouse</button>
+            <a href="{{ url_for('warehouses') }}" class="btn">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

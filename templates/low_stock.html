@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Low Stock Items{% endblock %}
+
+{% block content %}
+<h1>Low Stock Items</h1>
+
+<p style="margin-bottom: 1rem; color: #e74c3c;">These items are at or below their reorder level and need restocking.</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Product</th>
+            <th>Warehouse</th>
+            <th>Current Quantity</th>
+            <th>Reorder Level</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in items %}
+        <tr style="background: #fff3cd;">
+            <td>{{ item[1] }}</td>
+            <td>{{ item[2] }}</td>
+            <td><strong>{{ item[3] }}</strong></td>
+            <td>{{ item[4] }}</td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="4" style="text-align: center; color: #27ae60;">No low stock items!</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="actions" style="margin-top: 1rem;">
+    <a href="{{ url_for('inventory') }}" class="btn">Back to Inventory</a>
+</div>
+{% endblock %}
